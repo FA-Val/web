@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Pedido</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1 style="text-align: center; color: #ff5722;">Formulario de Pedido</h1>
+    <form id="pedidoForm">
+        <!-- Selección de Pizza -->
+        <label for="pizza">Selecciona tu pizza:</label>
+        <select id="pizza" required>
+            <option value="Margarita" data-precio="150">Margarita - $150 MXN</option>
+            <option value="Pepperoni" data-precio="180">Pepperoni - $180 MXN</option>
+        </select>
+
+        <label for="cantidadPizza">Cantidad de pizzas:</label>
+        <input type="number" id="cantidadPizza" min="1" value="1" required>
+
+        <!-- Botón para agregar domicilio -->
+        <h3>¿Ya agregaste tu domicilio?</h3>
+        <button type="button" id="agregarDomicilio" style="background-color: #ff5722; color: white; padding: 10px; border: none; border-radius: 5px;">Agregar Domicilio</button>
+
+        <!-- Método de Pago -->
+        <h3>Selecciona tu método de pago</h3>
+        <label for="pago">Forma de pago:</label>
+        <select id="pago" required>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Tarjeta">Tarjeta</option>
+        </select>
+
+        <!-- Campos adicionales para Tarjeta -->
+        <div id="datosTarjeta" style="display: none; margin-top: 20px; border: 1px solid #ddd; padding: 15px; border-radius: 5px;">
+            <h4>Información de la Tarjeta</h4>
+            <label for="tarjeta">Número de Tarjeta:</label>
+            <input type="text" id="tarjeta" placeholder="XXXX-XXXX-XXXX-XXXX">
+
+            <label for="fecha">Fecha de Expiración:</label>
+            <input type="text" id="fecha" placeholder="MM/AA">
+
+            <label for="cvv">CVV:</label>
+            <input type="password" id="cvv" placeholder="123">
+        </div>
+
+        <button type="submit" style="margin-top: 20px; padding: 10px; background-color: #ff5722; color: #fff; border: none; border-radius: 5px;">Confirmar Pedido</button>
+    </form>
+
+    <!-- Sección del Ticket -->
+    <div id="ticket" class="ticket" style="display: none; margin-top: 20px;">
+        <h2>Ticket de Compra</h2>
+        <p id="detallePizza"></p>
+        <p id="detalleCantidadPizza"></p>
+        <p id="detallePago"></p>
+        <p id="detalleDireccion"></p>
+        <p id="detalleTotal"></p>
+        <button id="seguirPedido" style="margin-top: 10px; padding: 10px; background-color: #ff5722; color: #fff; border: none; border-radius: 5px;">Seguir Pedido</button>
+    </div>
+
+    <!-- Seguimiento del Pedido -->
+    <div id="estadoPedido" class="ticket" style="display: none; margin-top: 20px;">
+        <h2>Estado del Pedido</h2>
+        <p id="estadoActual">Preparando tu pizza...</p>
+        <button id="avanzarEstado" style="margin-top: 10px; padding: 10px; background-color: #ff5722; color: #fff; border: none; border-radius: 5px;">Avanzar Estado</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const metodoPago = document.getElementById('pago');
+            const datosTarjeta = document.getElementById('datosTarjeta');
+            const form = document.getElementById('pedidoForm');
+            const ticket = document.getElementById('ticket');
+            const detallePizza = document.getElementById('detallePizza');
+            const detalleCantidadPizza = document.getElementById('detalleCantidadPizza');
+            const detallePago = document.getElementById('detallePago');
+            const detalleDireccion = document.getElementById('detalleDireccion');
+            const detalleTotal = document.getElementById('detalleTotal');
+            const seguirPedido = document.getElementById('seguirPedido');
+            const estadoPedido = document.getElementById('estadoPedido');
+            const estadoActual = document.getElementById('estadoActual');
+            const avanzarEstado = document.getElementById('avanzarEstado');
+            const pizzaSeleccionada = document.getElementById('pizza');
+            const cantidadPizza = document.getElementById('cantidadPizza');
+            const agregarDomicilio = document.getElementById('agregarDomicilio');
+
+            const estados = ["Preparando tu pizza...", "En camino...", "¡Entregado!"];
+            let estadoIndex = 0;
+
+            // Abrir página de domicilio
+            agregarDomicilio.addEventListener("click", () => {
+                window.open("domicilio.html", "_blank");
+            });
+
+            // Mostrar u ocultar los campos de tarjeta según el método de pago
+            metodoPago.addEventListener("change", () => {
+                datosTarjeta.style.display = metodoPago.value === "Tarjeta" ? "block" : "none";
+            });
+
+            // Confirmar Pedido y mostrar detalles
+            form.addEventListener("submit", (e) => {
+                e.preventDefault();
+
+                // Cargar domicilio desde localStorage
+                const domicilio = JSON.parse(localStorage.getItem("domicilio"));
+                const direccionTexto = domicilio
+                    ? `${domicilio.calle} ${domicilio.numero}, ${domicilio.colonia}, ${domicilio.ciudad}`
+                    : "Domicilio no proporcionado.";
+
+                const pizzaNombre = pizzaSeleccionada.value;
+                const pizzaPrecio = parseInt(pizzaSeleccionada.options[pizzaSeleccionada.selectedIndex].dataset.precio);
+                const cantidadDePizzas = parseInt(cantidadPizza.value);
+                const totalPizzas = pizzaPrecio * cantidadDePizzas;
+
+                if (metodoPago.value === "Tarjeta") {
+                    const numeroTarjeta = document.getElementById('tarjeta').value;
+                    detallePago.textContent = `Método de pago: Tarjeta (****${numeroTarjeta.slice(-4)}).`;
+                } else {
+                    detallePago.textContent = `Método de pago: Efectivo.`;
+                }
+
+                detallePizza.textContent = `Pizza: ${pizzaNombre} - $${pizzaPrecio} MXN c/u.`;
+                detalleCantidadPizza.textContent = `Cantidad de pizzas: ${cantidadDePizzas}.`;
+                detalleDireccion.textContent = `Dirección: ${direccionTexto}`;
+                detalleTotal.textContent = `Total a pagar: $${totalPizzas} MXN.`;
+
+                ticket.style.display = "block";
+            });
+
+            // Seguimiento del pedido
+            seguirPedido.addEventListener("click", () => {
+                ticket.style.display = "none";
+                estadoPedido.style.display = "block";
+                estadoActual.textContent = estados[estadoIndex];
+            });
+
+            avanzarEstado.addEventListener("click", () => {
+                estadoIndex++;
+                if (estadoIndex < estados.length) {
+                    estadoActual.textContent = estados[estadoIndex];
+                } else {
+                    estadoActual.textContent = "¡Pedido completado!";
+                    avanzarEstado.disabled = true;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
